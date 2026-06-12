@@ -10,12 +10,12 @@ public class NestingEngine
 {
     public NestResult Run(List<PartModel> parts, PlateModel plate, NestSettings settings)
     {
-        var result = new NestResult { PlateArea = plate.TotalArea };
-        var sorted = parts
-            .OrderByDescending(p => p.Area)
-            .ToList();
+        var result = new NestResult();
+        var sorted = parts.OrderByDescending(p => p.Area).ToList();
 
-        double[] skylineHeights = new double[1];
+        var currentPlate = ClonePlate(plate);
+        result.Plates.Add(currentPlate);
+        var skylineHeights = new double[1];
 
         foreach (var part in sorted)
         {
@@ -23,12 +23,30 @@ public class NestingEngine
 
             if (settings.AllowRotation0)
             {
-                placed = TryPlace(part, plate, settings, result, skylineHeights, false);
+                placed = TryPlace(part, currentPlate, settings, result, skylineHeights, false);
             }
 
             if (!placed && settings.AllowRotation90)
             {
-                placed = TryPlace(part, plate, settings, result, skylineHeights, true);
+                placed = TryPlace(part, currentPlate, settings, result, skylineHeights, true);
+            }
+
+            if (!placed)
+            {
+                var newPlate = ClonePlate(plate);
+                result.Plates.Add(newPlate);
+                currentPlate = newPlate;
+                skylineHeights = new double[1];
+
+                if (settings.AllowRotation0)
+                {
+                    placed = TryPlace(part, currentPlate, settings, result, skylineHeights, false);
+                }
+
+                if (!placed && settings.AllowRotation90)
+                {
+                    placed = TryPlace(part, currentPlate, settings, result, skylineHeights, true);
+                }
             }
 
             if (!placed)
@@ -58,12 +76,20 @@ public class NestingEngine
             double x = position.Value.X + plate.Margin;
             double y = position.Value.Y + plate.Margin;
 
+            if (HasOverlap(x, y, effectiveW, effectiveH, result, plate))
+                return false;
+
             var placement = new NestPlacement
             {
+                PartId = part.Id,
+                PartName = part.Name,
                 Part = part,
                 X = x,
                 Y = y,
                 RotationDeg = rotated ? 90 : 0,
+                PlateIndex = result.Plates.IndexOf(plate),
+                Width = pw,
+                Height = ph,
                 TransformedGeometry = part.Geometry.Transform(x, y, rotated)
             };
 
@@ -73,6 +99,26 @@ public class NestingEngine
             UpdateSkyline(skylineHeights, position.Value.X, effectiveW, position.Value.Y + effectiveH, plate.UsableWidth);
 
             return true;
+        }
+
+        return false;
+    }
+
+    private bool HasOverlap(double x, double y, double w, double h, NestResult result, PlateModel currentPlate)
+    {
+        int currentPlateIndex = result.Plates.IndexOf(currentPlate);
+
+        foreach (var placed in result.Placed)
+        {
+            if (placed.PlateIndex != currentPlateIndex) continue;
+
+            if (x < placed.X + placed.Width &&
+                x + w > placed.X &&
+                y < placed.Y + placed.Height &&
+                y + h > placed.Y)
+            {
+                return true;
+            }
         }
 
         return false;
@@ -129,4 +175,14 @@ public class NestingEngine
             skylineHeights[i] = newY;
         }
     }
+
+    private PlateModel ClonePlate(PlateModel source) => new()
+    {
+        Id = source.Id,
+        Width = source.Width,
+        Height = source.Height,
+        Margin = source.Margin,
+        Gap = source.Gap,
+        MaterialThickness = source.MaterialThickness
+    };
 }

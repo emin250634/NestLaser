@@ -1,55 +1,59 @@
 # DECISIONS.md — NestLaser Desktop
 
 ## Karar #1 — Prototip Tech Stack
-**Tarih:** 2026-06-12
-**Durum:** ✅ Uygulandı
-**Karar:** CorelDRAW 2025 VBA macro yalnızca prototip olarak kaldı. Ana ürün C# .NET 8 tabanlı Windows masaüstü uygulaması olacak.
-**Gerekçe:** VBA'nın nesting algoritması için yeterli API sunmaması.
+**Tarih:** 2026-06-12 | **Durum:** ✅
+**Karar:** Ana ürün C# .NET 8 WPF olacak.
 
-## Karar #2 — UI Teknolojisi
-**Tarih:** 2026-06-12
-**Durum:** ✅ Uygulandı
-**Karar:** WPF (Windows Presentation Foundation) kullanılacak.
-**Gerekçe:** MVVM deseni için doğal destek, Canvas tabanlı önizleme için uygun.
+## Karar #2 — DXF Kütüphanesi
+**Tarih:** 2026-06-12 | **Durum:** ✅
+**Karar:** netDxf.Standard kullanılacak.
 
-## Karar #3 — DXF Kütüphanesi
-**Tarih:** 2026-06-12
-**Durum:** ✅ Uygulandı
-**Karar:** netDxf.Standard kütüphanesi kullanılacak.
-**Gerekçe:** Açık kaynak, .NET 8 uyumlu, aktif geliştirme.
+## Karar #3 — İlk Nesting Algoritması
+**Tarih:** 2026-06-12 | **Durum:** ✅
+**Karar:** Bounding box nesting kullanılacak.
 
-## Karar #4 — İlk Nesting Algoritması
-**Tarih:** 2026-06-12
-**Durum:** ✅ Uygulandı
-**Karar:** İlk MVP'de bounding box nesting kullanılacak.
-**Gerekçe:** Hızlı uygulama, gerçek kontur nesting sonraki fazda.
+## Karar #4 — Yerleşim Stratejisi
+**Tarih:** 2026-06-12 | **Durum:** ✅
+**Karar:** Skyline tabanlı bottom-left yerleşim.
 
-## Karar #5 — Yerleşim Stratejisi
-**Tarih:** 2026-06-12
-**Durum:** ✅ Uygulandı
-**Karar:** Skyline tabanlı bottom-left yerleşim tercih edildi.
-**Gerekçe:** Basit bottom-left'e göre daha iyi alan kullanımı.
+## Karar #5 — MVVM Kullanımı
+**Tarih:** 2026-06-12 | **Durum:** ✅
+**Karar:** MVVM mimarisi kullanılacak.
 
-## Karar #6 — MVVM Kullanımı
-**Tarih:** 2026-06-12
-**Durum:** ✅ Uygulandı
-**Karar:** MVVM (Model-View-ViewModel) mimarisi kullanılacak.
-**Gerekçe:** Kod ayrılabilirliği, test edilebilirlik.
+## Karar #6 — ICommand Pattern
+**Tarih:** 2026-06-12 | **Durum:** ✅
+**Karar:** RelayCommand (ICommand) pattern kullanılacak.
 
-## Karar #7 — Geometry Modelleri Ayrıştırma
-**Tarih:** 2026-06-12
-**Durum:** ✅ Uygulandı
-**Karar:** Geometrik modeller (Point2D, Polygon, BoundingBox) ayrı Geometry klasörüne taşındı.
-**Gerekçe:** Geometrik hesaplamaların iş mantığından ayrılması, SAT algoritması için altyapı.
+## Karar #7 — DXF Entity Desteği
+**Tarih:** 2026-06-12 | **Durum:** ✅
+**Karar:** LwPolyline, Polyline, Circle, Arc, Line desteklenecek.
 
-## Karar #8 — Ayarlar Yapılandırması
-**Tarih:** 2026-06-12
-**Durum:** ✅ Uygulandı
-**Karar:** NestSettings sınıfı ile nesting parametreleri yapılandırılabilir hale getirildi.
-**Gerekçe:** Farklı senaryolar için kolay ayar değişikliği, gelecekte JSON kaydetme desteği.
+## Karar #8 — Overlap Kontrolü
+**Tarih:** 2026-06-12 | **Durum:** ✅
+**Karar:** NestingEngine'de bounding box bazlı overlap kontrolü yapılacak.
+**Gerekçe:** Parçaların üst üste binmemesi için.
 
-## Karar #9 — Proje Yapısı
-**Tarih:** 2026-06-12
-**Durum:** ✅ Uygulandı
-**Karar:** Proje yapısı Geometry, Models, Services, Nesting, ViewModels, Views, Utilities olarak yeniden yapılandırıldı.
-**Gerekçe:** Profesyonel mimari, modüler genişletilebilirlik, DXF Import/Export ve RDWorks Export için altyapı.
+## Karar #9 — Çoklu Plaka Desteği
+**Tarih:** 2026-06-12 | **Durum:** ✅
+**Karar:** Bir plaka dolarsa otomatik yeni plaka oluşturulacak.
+**Gerekçe:** Büyük parça setlerinde tek plaka yetersiz kalabilir.
+
+## Karar #10 — NestPlacement PlateIndex
+**Tarih:** 2026-06-12 | **Durum:** ✅
+**Karar:** Her yerleşim hangi plakaya ait olduğunu belirtecek.
+**Gerekçe:** Çoklu plaka önizlemesi ve raporlama için.
+
+## Karar #11 — Rapor Alanı
+**Tarih:** 2026-06-12 | **Durum:** ✅
+**Karar:** Sol panelde detaylı rapor alanı olacak (toplam, yerleşen, sığmayan, plaka, verimlilik, fire).
+**Gerekçe:** Kullanıcıya anında geri bildirim.
+
+## Karar #12 — Plaka Validasyonu
+**Tarih:** 2026-06-12 | **Durum:** ✅
+**Karar:** Plaka boyutları ve kenar boşluğu için validasyon eklenecek.
+**Gerekçe:** Geçersiz parametrelerle hatalı sonuçların önlenmesi.
+
+## Karar #13 — Büyük Parça Uyarısı
+**Tarih:** 2026-06-12 | **Durum:** ✅
+**Karar:** Plakaya sığmayan parçalar için uyarı verilecek.
+**Gerekçe:** Kullanıcının beklentisini karşılamak.

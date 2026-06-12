@@ -13,39 +13,50 @@
 - [x] DXF export
 
 ## v0.1.1 — Faz 1: Altyapı Sağlamlaştırma ✅
-- [x] README.md oluşturuldu
-- [x] Geometry klasörü (Point2D, Polygon, BoundingBox, GeometryUtils)
-- [x] Modeller yeniden yapılandırıldı (PartModel, PlateModel, NestResult, NestSettings)
-- [x] Nesting/ klasörü (Engine→Nesting yeniden adlandırma)
-- [x] Views klasörü
-- [x] Utilities klasörü (AppConstants, MathHelper)
-- [x] Eski dosyalar temizlendi
-- [x] Namespace güncellemeleri
+- [x] README.md
+- [x] Geometry klasörü
+- [x] Modeller yeniden yapılandırıldı
+- [x] Nesting/, Views/, Utilities/ klasörleri
 
-## v0.2 — Geliştirilmiş MVP
-- [ ] Parça listesi görünümü (DataGrid)
-- [ ] Parça seçme ve silme
-- [ ] Çoklu dosya DXF yükleme
+## v0.2 — Faz 2: DXF Import ve Önizleme ✅
+- [x] RelayCommand ICommand pattern
+- [x] DxfService Arc/Line desteği
+- [x] DxfImportResult
+- [x] ObservableCollection parça listesi
+- [x] Gerçek kontur çizimi
+
+## v0.3 — Faz 3: Bounding Box Nesting ✅
+- [x] Overlap kontrolü
+- [x] Çoklu plaka desteği
+- [x] NestPlacement PlateIndex/Width/Height
+- [x] NestResult Plates listesi
+- [x] Plaka validasyonu
+- [x] Büyük parça uyarısı
+- [x] Rapor alanı (toplam, yerleşen, sığmayan, plaka, verimlilik, fire)
+- [x] YERLEŞTİR butonu
+- [x] Çoklu plaka yan yana önizleme
+- [x] Margin gösterimi (kesikli çizgi)
+
+## v0.4 — Faz 4: Geliştirilmiş Import
+- [ ] DXF çoklu dosya desteği
 - [ ] DXF katman filtreleme
-- [ ] Parça adı/ID gösterimi
+- [ ] Parça sürükleme (drag & drop)
 - [ ] Önizleme zoom/pan
-- [ ] Hata mesajları ve uyarılar
+- [ ] Parça adı/ID düzenleme
+- [ ] PartQuantity (çoklu kopya)
 - [ ] Ayarları kaydet/yükle (JSON)
 
-## v0.3 — Profesyonel Özellikler
-- [ ] Parçaları sürükleme (drag & drop)
+## v0.5 — Faz 5: Profesyonel Özellikler
 - [ ] Gerçek kontur nesting (concave polygon)
 - [ ] Çarpışma kontrolü (SAT / Minkowski)
-- [ ] Birden fazla plaka desteği
-- [ ] Plaka seçimi ve yönetimi
-- [ ] Rapor PDF çıktısı
 - [ ] RDWorks uyumlu DXF formatı
+- [ ] Rapor PDF çıktısı
 
 ## v1.0 — Tam Sürüm
 - [ ] Tam kontur nesting algoritması
 - [ ] Çoklu plaka optimizasyonu
 - [ ] Otomatik parça sıralama stratejileri
-- [ ] Toplu iş.processing
+- [ ] Toplu iş processing
 - [ ] Preset yönetimi (malzeme/kalınlık)
 - [ ] Keyboard shortcuts
 - [ ] Auto-update mekanizması

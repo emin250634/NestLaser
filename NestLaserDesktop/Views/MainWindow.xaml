@@ -10,9 +10,13 @@
         <vm:MainViewModel />
     </Window.DataContext>
 
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </Window.Resources>
+
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="280" />
+            <ColumnDefinition Width="300" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
@@ -23,75 +27,197 @@
             <TextBlock DockPanel.Dock="Top" Text="Lazer Kesim Parça Yerleşimi" Foreground="#808080"
                        FontSize="11" Margin="12,0,12,10" />
 
+            <!-- Alt Panel: Butonlar ve Durum -->
             <StackPanel DockPanel.Dock="Bottom" Margin="12">
                 <TextBlock Text="{Binding StatusText}" Foreground="#DCDCAA" FontSize="11"
                            TextWrapping="Wrap" Margin="0,0,0,8" />
-                <Button Content="DXF Yükle" Click="OnLoadDxf" Height="30" Margin="0,0,0,6"
-                        Background="#0E639C" Foreground="White" BorderThickness="0" />
-                <Button Content="Nesting Çalıştır" Click="OnRunNesting" Height="30" Margin="0,0,0,6"
-                        Background="#16825D" Foreground="White" BorderThickness="0" />
-                <Button Content="DXF Dışa Aktar" Click="OnExportDxf" Height="30" Margin="0,0,0,6"
-                        Background="#68217A" Foreground="White" BorderThickness="0" />
-                <Button Content="Temizle" Click="OnClearAll" Height="30"
-                        Background="#4A4A4A" Foreground="White" BorderThickness="0" />
+                <Button Content="DXF Aç" Command="{Binding OpenDxfCommand}" Height="32" Margin="0,0,0,6"
+                        Background="#0E639C" Foreground="White" BorderThickness="0" FontSize="12" />
+                <Button Content="YERLEŞTİR" Command="{Binding RunNestingCommand}" Height="36" Margin="0,0,0,6"
+                        Background="#16825D" Foreground="White" BorderThickness="0" FontSize="14" FontWeight="Bold" />
+                <Button Content="DXF Dışa Aktar" Command="{Binding ExportDxfCommand}" Height="32" Margin="0,0,0,6"
+                        Background="#68217A" Foreground="White" BorderThickness="0" FontSize="12"
+                        IsEnabled="{Binding HasNestResult}" />
+                <Button Content="Temizle" Command="{Binding ClearCommand}" Height="32"
+                        Background="#4A4A4A" Foreground="White" BorderThickness="0" FontSize="12" />
             </StackPanel>
 
+            <!-- Scrollable Content -->
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="12,8">
+                    <!-- Dosya Bilgisi -->
+                    <TextBlock Text="Dosya" Foreground="#569CD6" FontWeight="SemiBold" Margin="0,0,0,6" />
+                    <TextBlock Text="{Binding FilePathDisplay}" Foreground="#CCCCCC" FontSize="11"
+                               TextTrimming="CharacterEllipsis" Margin="0,0,0,12" />
+
+                    <!-- Plaka Ayarları -->
                     <TextBlock Text="Plaka Ayarları" Foreground="#569CD6" FontWeight="SemiBold" Margin="0,0,0,6" />
+                    <Grid Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Margin="0,0,4,0">
+                            <TextBlock Text="Genişlik (mm)" Foreground="#CCCCCC" FontSize="11" />
+                            <TextBox Text="{Binding PlateWidthText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6"
+                                     Background="#3C3C3C" Foreground="White" BorderThickness="1" BorderBrush="#555" Padding="4,3" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="4,0,0,0">
+                            <TextBlock Text="Yükseklik (mm)" Foreground="#CCCCCC" FontSize="11" />
+                            <TextBox Text="{Binding PlateHeightText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6"
+                                     Background="#3C3C3C" Foreground="White" BorderThickness="1" BorderBrush="#555" Padding="4,3" />
+                        </StackPanel>
+                    </Grid>
+                    <Grid Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Margin="0,0,4,0">
+                            <TextBlock Text="Kenar Boşluğu (mm)" Foreground="#CCCCCC" FontSize="11" />
+                            <TextBox Text="{Binding MarginText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6"
+                                     Background="#3C3C3C" Foreground="White" BorderThickness="1" BorderBrush="#555" Padding="4,3" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="4,0,0,0">
+                            <TextBlock Text="Parça Arası (mm)" Foreground="#CCCCCC" FontSize="11" />
+                            <TextBox Text="{Binding GapText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6"
+                                     Background="#3C3C3C" Foreground="White" BorderThickness="1" BorderBrush="#555" Padding="4,3" />
+                        </StackPanel>
+                    </Grid>
 
-                    <TextBlock Text="Genişlik (mm)" Foreground="#CCCCCC" FontSize="11" />
-                    <TextBox Text="{Binding PlateWidthText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8"
-                             Background="#3C3C3C" Foreground="White" BorderThickness="1" BorderBrush="#555" Padding="4,3" />
-
-                    <TextBlock Text="Yükseklik (mm)" Foreground="#CCCCCC" FontSize="11" />
-                    <TextBox Text="{Binding PlateHeightText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8"
-                             Background="#3C3C3C" Foreground="White" BorderThickness="1" BorderBrush="#555" Padding="4,3" />
-
-                    <TextBlock Text="Kenar Boşluğu (mm)" Foreground="#CCCCCC" FontSize="11" />
-                    <TextBox Text="{Binding MarginText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8"
-                             Background="#3C3C3C" Foreground="White" BorderThickness="1" BorderBrush="#555" Padding="4,3" />
-
-                    <TextBlock Text="Parça Arası Boşluk (mm)" Foreground="#CCCCCC" FontSize="11" />
-                    <TextBox Text="{Binding GapText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,12"
-                             Background="#3C3C3C" Foreground="White" BorderThickness="1" BorderBrush="#555" Padding="4,3" />
-
+                    <!-- Parça Bilgisi -->
                     <TextBlock Text="Parça Bilgisi" Foreground="#569CD6" FontWeight="SemiBold" Margin="0,0,0,6" />
-                    <TextBlock Text="{Binding PartCount, StringFormat='Toplam: {0} parça'}" Foreground="#CCCCCC" FontSize="11" Margin="0,0,0,12" />
+                    <Grid Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Toplam Parça:" Foreground="#CCCCCC" FontSize="11" />
+                        <TextBlock Grid.Column="1" Text="{Binding PartCount}" Foreground="#4EC9B0" FontWeight="Bold" FontSize="11" />
+                    </Grid>
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Toplam Alan:" Foreground="#CCCCCC" FontSize="11" />
+                        <TextBlock Grid.Column="1" Text="{Binding TotalPartsAreaText}" Foreground="#4EC9B0" FontWeight="Bold" FontSize="11" />
+                    </Grid>
 
-                    <TextBlock Text="Nesting Sonucu" Foreground="#569CD6" FontWeight="SemiBold" Margin="0,0,0,6" />
-                    <Grid Margin="0,0,0,4">
+                    <!-- Seçili Parça -->
+                    <TextBlock Text="Seçili Parça" Foreground="#569CD6" FontWeight="SemiBold" Margin="0,0,0,6" />
+                    <TextBlock Text="{Binding SelectedPartInfo}" Foreground="#CCCCCC" FontSize="11"
+                               TextWrapping="Wrap" Margin="0,0,0,12" />
+
+                    <!-- Parça Listesi -->
+                    <Grid Margin="0,0,0,6">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="Yerleşen:" Foreground="#CCCCCC" FontSize="11" />
-                        <TextBlock Grid.Column="1" Text="{Binding PlacedCount}" Foreground="#4EC9B0" FontWeight="Bold" FontSize="11" />
+                        <TextBlock Text="Parça Listesi" Foreground="#569CD6" FontWeight="SemiBold" />
+                        <Button Grid.Column="1" Content="Sil" Command="{Binding DeletePartCommand}"
+                                Padding="8,2" Background="#4A4A4A" Foreground="White" BorderThickness="0" FontSize="10" />
                     </Grid>
-                    <Grid Margin="0,0,0,4">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="Yerleşemeyen:" Foreground="#CCCCCC" FontSize="11" />
-                        <TextBlock Grid.Column="1" Text="{Binding UnplacedCount}" Foreground="#F44747" FontWeight="Bold" FontSize="11" />
-                    </Grid>
-                    <Grid Margin="0,0,0,4">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="Verimlilik:" Foreground="#CCCCCC" FontSize="11" />
-                        <TextBlock Grid.Column="1" Text="{Binding EfficiencyText}" Foreground="#4EC9B0" FontWeight="Bold" FontSize="11" />
-                    </Grid>
-                    <Grid Margin="0,0,0,4">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="Fire:" Foreground="#CCCCCC" FontSize="11" />
-                        <TextBlock Grid.Column="1" Text="{Binding WasteText}" Foreground="#F44747" FontWeight="Bold" FontSize="11" />
-                    </Grid>
+                    <Border Background="#1E1E1E" BorderBrush="#3C3C3C" BorderThickness="1"
+                            Height="100" Margin="0,0,0,12">
+                        <ListBox ItemsSource="{Binding Parts}"
+                                 SelectedItem="{Binding SelectedPart}"
+                                 Background="Transparent" Foreground="#CCCCCC"
+                                 BorderThickness="0" FontSize="11"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="2">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="#DCDCAA" />
+                                        <TextBlock Foreground="#808080" FontSize="10">
+                                            <Run Text="{Binding Width, StringFormat={}{0:F1}}" />
+                                            <Run Text="x" />
+                                            <Run Text="{Binding Height, StringFormat={}{0:F1}}" />
+                                            <Run Text=" mm | " />
+                                            <Run Text="{Binding Area, StringFormat={}{0:F0}}" />
+                                            <Run Text=" mm²" />
+                                        </TextBlock>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Border>
+
+                    <!-- Rapor -->
+                    <TextBlock Text="Rapor" Foreground="#569CD6" FontWeight="SemiBold" Margin="0,0,0,6"
+                               Visibility="{Binding HasNestResult, Converter={StaticResource BoolToVis}}" />
+                    <Border Background="#1E1E1E" BorderBrush="#3C3C3C" BorderThickness="1"
+                            Padding="8" Margin="0,0,0,12"
+                            Visibility="{Binding HasNestResult, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Toplam Parça:" Foreground="#CCCCCC" FontSize="11" />
+                                <TextBlock Grid.Column="1" Text="{Binding PartCount}" Foreground="#DCDCAA" FontWeight="Bold" FontSize="11" />
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Yerleşen:" Foreground="#CCCCCC" FontSize="11" />
+                                <TextBlock Grid.Column="1" Text="{Binding PlacedCount}" Foreground="#4EC9B0" FontWeight="Bold" FontSize="11" />
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Sığmayan:" Foreground="#CCCCCC" FontSize="11" />
+                                <TextBlock Grid.Column="1" Text="{Binding UnplacedCount}" Foreground="#F44747" FontWeight="Bold" FontSize="11" />
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Plaka Sayısı:" Foreground="#CCCCCC" FontSize="11" />
+                                <TextBlock Grid.Column="1" Text="{Binding PlateCount}" Foreground="#569CD6" FontWeight="Bold" FontSize="11" />
+                            </Grid>
+                            <Separator Background="#3C3C3C" Margin="0,4" />
+                            <Grid Margin="0,4,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Kullanılan Alan:" Foreground="#CCCCCC" FontSize="11" />
+                                <TextBlock Grid.Column="1" Text="{Binding UsedAreaText}" Foreground="#4EC9B0" FontWeight="Bold" FontSize="11" />
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Toplam Plaka:" Foreground="#CCCCCC" FontSize="11" />
+                                <TextBlock Grid.Column="1" Text="{Binding TotalPlateAreaText}" Foreground="#CCCCCC" FontSize="11" />
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Verimlilik:" Foreground="#CCCCCC" FontSize="11" />
+                                <TextBlock Grid.Column="1" Text="{Binding EfficiencyText}" Foreground="#4EC9B0" FontWeight="Bold" FontSize="12" />
+                            </Grid>
+                            <Grid Margin="0,0,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Fire:" Foreground="#CCCCCC" FontSize="11" />
+                                <TextBlock Grid.Column="1" Text="{Binding WasteText}" Foreground="#F44747" FontWeight="Bold" FontSize="12" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </ScrollViewer>
         </DockPanel>
@@ -102,6 +228,10 @@
                 <Canvas x:Name="NestCanvas" ClipToBounds="True"
                         SizeChanged="NestCanvas_SizeChanged" />
             </Border>
+            <TextBlock Text="DXF yüklendiğinde önizleme gösterilecek"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Foreground="#555" FontSize="13"
+                       Visibility="{Binding PartCount, Converter={StaticResource IntToZeroConverter}}" />
         </Grid>
     </Grid>
 </Window>

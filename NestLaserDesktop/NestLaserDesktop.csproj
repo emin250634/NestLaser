@@ -11,7 +11,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="netDxf.Standard" Version="3.0.0" />
+    <!-- netDxf.Standard 2.1.1 API uyuşmazlığı nedeniyle geçici olarak devre dışı
+    Gelecek sürümde doğru API ile tekrar eklenecek -->
+    <!-- <PackageReference Include="netDxf.Standard" Version="2.1.1" /> -->
   </ItemGroup>
 
 </Project>

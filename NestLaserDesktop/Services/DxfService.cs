@@ -2,118 +2,150 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using netDxf;
-using netDxf.Entities;
-using netDxf.Header;
 using NestLaserDesktop.Geometry;
 using NestLaserDesktop.Models;
-using NestLaserDesktop.Utilities;
 
 namespace NestLaserDesktop.Services;
 
 public static class DxfService
 {
-    public static List<PartModel> Import(string filePath)
+    public static DxfImportResult Import(string filePath)
     {
-        var doc = DxfDocument.Load(filePath);
-        if (doc == null)
-            throw new InvalidOperationException($"DXF dosyası yüklenemedi: {filePath}");
+        var result = new DxfImportResult { FilePath = filePath, FileName = Path.GetFileName(filePath) };
 
-        var parts = new List<PartModel>();
-        string sourceFile = Path.GetFileNameWithoutExtension(filePath);
-
-        foreach (var polyline in doc.Entities.LwPolylines)
+        try
         {
-            if (!polyline.IsClosed) continue;
-
-            var polygon = new Polygon();
-            polygon.Vertices = polyline.Vertexes
-                .Select(v => new Point2D(v.Position.X, v.Position.Y))
-                .ToList();
-
-            if (polygon.Vertices.Count < 3) continue;
-
-            polygon.NormalizeWinding();
-            polygon.Calculate();
-
-            parts.Add(new PartModel
+            if (!File.Exists(filePath))
             {
-                Name = $"{sourceFile}_P{parts.Count + 1}",
-                SourceFile = sourceFile,
-                LayerName = polyline.Layer?.Name ?? "0",
-                Geometry = polygon
-            });
+                result.Errors.Add($"Dosya bulunamadı: {filePath}");
+                return result;
+            }
+
+            string extension = Path.GetExtension(filePath).ToLowerInvariant();
+            if (extension != ".dxf")
+            {
+                result.Errors.Add("Sadece .dxf dosyaları destekleniyor.");
+                return result;
+            }
+
+            var entities = DxfParser.Parse(filePath);
+            string sourceFile = Path.GetFileNameWithoutExtension(filePath);
+            int partIndex = 0;
+
+            foreach (var entity in entities)
+            {
+                if (entity.Vertices.Count < 2) continue;
+
+                var polygon = new Polygon();
+                polygon.Vertices = new List<Point2D>(entity.Vertices);
+
+                if (polygon.Vertices.Count >= 3)
+                {
+                    polygon.NormalizeWinding();
+                }
+                polygon.Calculate();
+
+                string prefix = entity.Type switch
+                {
+                    DxfEntityType.LwPolyline => "LP",
+                    DxfEntityType.Polyline => "P",
+                    DxfEntityType.Circle => "C",
+                    DxfEntityType.Arc => "A",
+                    DxfEntityType.Line => "L",
+                    _ => "X"
+                };
+
+                partIndex++;
+                result.Parts.Add(new PartModel
+                {
+                    Name = $"{sourceFile}_{prefix}{partIndex}",
+                    SourceFile = sourceFile,
+                    LayerName = "0",
+                    Geometry = polygon
+                });
+            }
+
+            result.TotalArea = result.Parts.Sum(p => p.Area);
+            result.Success = true;
+
+            if (result.Parts.Count == 0)
+            {
+                result.Warnings.Add("DXF dosyasında kapalı şekil bulunamadı.");
+            }
+        }
+        catch (Exception ex)
+        {
+            result.Errors.Add($"DXF okuma hatası: {ex.Message}");
         }
 
-        foreach (var polyline in doc.Entities.Polylines)
-        {
-            if (!polyline.IsClosed) continue;
-
-            var polygon = new Polygon();
-            polygon.Vertices = polyline.Vertexes
-                .Select(v => new Point2D(v.Position.X, v.Position.Y))
-                .ToList();
-
-            if (polygon.Vertices.Count < 3) continue;
-
-            polygon.NormalizeWinding();
-            polygon.Calculate();
-
-            parts.Add(new PartModel
-            {
-                Name = $"{sourceFile}_P{parts.Count + 1}",
-                SourceFile = sourceFile,
-                LayerName = polyline.Layer?.Name ?? "0",
-                Geometry = polygon
-            });
-        }
-
-        foreach (var circle in doc.Entities.Circles)
-        {
-            var center = new Point2D(circle.Center.X, circle.Center.Y);
-            var vertices = GeometryUtils.CircleToPolygon(center, circle.Radius, AppConstants.CircleSegments);
-
-            var polygon = new Polygon();
-            polygon.Vertices = vertices;
-            polygon.Calculate();
-
-            parts.Add(new PartModel
-            {
-                Name = $"{sourceFile}_C{parts.Count + 1}",
-                SourceFile = sourceFile,
-                LayerName = circle.Layer?.Name ?? "0",
-                Geometry = polygon
-            });
-        }
-
-        return parts;
+        return result;
     }
 
     public static void Export(string filePath, PlateModel plate, List<NestPlacement> placements)
     {
-        var doc = new DxfDocument(DxfVersion.R2010);
-
-        var platePoly = new LwPolyline();
-        platePoly.IsClosed = true;
-        platePoly.Vertexes.Add(new LwPolylineVertex(0, 0));
-        platePoly.Vertexes.Add(new LwPolylineVertex(plate.Width, 0));
-        platePoly.Vertexes.Add(new LwPolylineVertex(plate.Width, plate.Height));
-        platePoly.Vertexes.Add(new LwPolylineVertex(0, plate.Height));
-        doc.Entities.Add(platePoly);
-
-        foreach (var p in placements)
+        try
         {
-            var poly = new LwPolyline();
-            poly.IsClosed = true;
+            var lines = new List<string>();
 
-            foreach (var v in p.TransformedGeometry.Vertices)
+            lines.Add("0");
+            lines.Add("SECTION");
+            lines.Add("2");
+            lines.Add("ENTITIES");
+
+            WriteLwPolyline(lines, "Plate", new List<Geometry.Point2D>
             {
-                poly.Vertexes.Add(new LwPolylineVertex(v.X, v.Y));
+                new(0, 0),
+                new(plate.Width, 0),
+                new(plate.Width, plate.Height),
+                new(0, plate.Height)
+            }, true);
+
+            foreach (var p in placements)
+            {
+                WriteLwPolyline(lines, "Parts", p.TransformedGeometry.Vertices, true);
             }
 
-            doc.AddEntity(poly);
-        }
+            lines.Add("0");
+            lines.Add("ENDSEC");
+            lines.Add("0");
+            lines.Add("EOF");
 
-        doc.Save(filePath);
+            File.WriteAllLines(filePath, lines);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"DXF yazma hatası: {ex.Message}", ex);
+        }
     }
+
+    private static void WriteLwPolyline(List<string> lines, string layer, List<Geometry.Point2D> vertices, bool closed)
+    {
+        lines.Add("0");
+        lines.Add("LWPOLYLINE");
+        lines.Add("8");
+        lines.Add(layer);
+        lines.Add("90");
+        lines.Add(vertices.Count.ToString());
+        lines.Add("70");
+        lines.Add(closed ? "1" : "0");
+
+        foreach (var v in vertices)
+        {
+            lines.Add("10");
+            lines.Add(v.X.ToString("F6", System.Globalization.CultureInfo.InvariantCulture));
+            lines.Add("20");
+            lines.Add(v.Y.ToString("F6", System.Globalization.CultureInfo.InvariantCulture));
+        }
+    }
+}
+
+public class DxfImportResult
+{
+    public bool Success { get; set; }
+    public string FilePath { get; set; } = string.Empty;
+    public string FileName { get; set; } = string.Empty;
+    public List<PartModel> Parts { get; set; } = new();
+    public double TotalArea { get; set; }
+    public List<string> Errors { get; set; } = new();
+    public List<string> Warnings { get; set; } = new();
 }
