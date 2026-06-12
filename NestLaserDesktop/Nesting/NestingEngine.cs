@@ -1,16 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using NestLaserDesktop.Geometry;
 using NestLaserDesktop.Models;
 
-namespace NestLaserDesktop.Engine;
+namespace NestLaserDesktop.Nesting;
 
 public class NestingEngine
 {
-    public NestResult Run(List<Part> parts, Plate plate, bool allowRotation = true)
+    public NestResult Run(List<PartModel> parts, PlateModel plate, NestSettings settings)
     {
         var result = new NestResult { PlateArea = plate.TotalArea };
-        var sorted = parts.OrderByDescending(p => p.Area).ToList();
+        var sorted = parts
+            .OrderByDescending(p => p.Area)
+            .ToList();
 
         double[] skylineHeights = new double[1];
 
@@ -18,15 +21,14 @@ public class NestingEngine
         {
             bool placed = false;
 
-            if (allowRotation)
+            if (settings.AllowRotation0)
             {
-                placed = TryPlace(part, plate, result, skylineHeights, false);
-                if (!placed)
-                    placed = TryPlace(part, plate, result, skylineHeights, true);
+                placed = TryPlace(part, plate, settings, result, skylineHeights, false);
             }
-            else
+
+            if (!placed && settings.AllowRotation90)
             {
-                placed = TryPlace(part, plate, result, skylineHeights, false);
+                placed = TryPlace(part, plate, settings, result, skylineHeights, true);
             }
 
             if (!placed)
@@ -38,11 +40,11 @@ public class NestingEngine
         return result;
     }
 
-    private bool TryPlace(Part part, Plate plate, NestResult result, double[] skylineHeights, bool rotated)
+    private bool TryPlace(PartModel part, PlateModel plate, NestSettings settings, NestResult result, double[] skylineHeights, bool rotated)
     {
         double pw = rotated ? part.Height : part.Width;
         double ph = rotated ? part.Width : part.Height;
-        double gap = 2;
+        double gap = settings.GapBetweenParts;
         double effectiveW = pw + gap;
         double effectiveH = ph + gap;
 
@@ -62,13 +64,13 @@ public class NestingEngine
                 X = x,
                 Y = y,
                 RotationDeg = rotated ? 90 : 0,
-                TransformedVertices = TransformVertices(part.Vertices, x, y, rotated)
+                TransformedGeometry = part.Geometry.Transform(x, y, rotated)
             };
 
             result.Placed.Add(placement);
             result.UsedArea += part.Area;
 
-            UpdateSkyline(skylineHeights, position.Value.X, effectiveW, position.Value.Y + effectiveH);
+            UpdateSkyline(skylineHeights, position.Value.X, effectiveW, position.Value.Y + effectiveH, plate.UsableWidth);
 
             return true;
         }
@@ -114,32 +116,17 @@ public class NestingEngine
         return new Point2D(bestX, bestY);
     }
 
-    private void UpdateSkyline(double[] skylineHeights, double x, double w, double newY)
+    private void UpdateSkyline(double[] skylineHeights, double x, double w, double newY, double plateW)
     {
         int resolution = skylineHeights.Length;
         if (resolution == 0) return;
 
-        int startIdx = (int)(x / (resolution) * resolution);
-        int endIdx = (int)((x + w) / (resolution) * resolution);
-        startIdx = Math.Max(0, Math.Min(startIdx, resolution - 1));
-        endIdx = Math.Max(0, Math.Min(endIdx, resolution - 1));
+        int startIdx = Math.Max(0, (int)(x / plateW * resolution));
+        int endIdx = Math.Min(resolution - 1, (int)((x + w) / plateW * resolution));
 
         for (int i = startIdx; i <= endIdx; i++)
         {
             skylineHeights[i] = newY;
         }
-    }
-
-    private List<Point2D> TransformVertices(List<Point2D> vertices, double tx, double ty, bool rotate90)
-    {
-        var result = new List<Point2D>();
-        foreach (var v in vertices)
-        {
-            if (rotate90)
-                result.Add(new Point2D(tx + v.Y, ty - v.X + v.Y));
-            else
-                result.Add(new Point2D(tx + v.X, ty + v.Y));
-        }
-        return result;
     }
 }

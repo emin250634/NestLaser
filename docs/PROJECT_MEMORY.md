@@ -13,9 +13,10 @@ CorelDRAW VBA makrosundan C# .NET 8 WPF uygulamasına geçiş sürecinde.
 | Nesting Algoritması | Bounding box + Skyline (MVP) |
 | Platform | Windows 10/11 |
 
-## Mevcut Dosya Yapısı
+## Mevcut Dosya Yapısı (v0.1.1 — Faz 1)
 ```
 NestLaserDesktop/
+├── README.md
 ├── NestLaserDesktop.sln
 ├── docs/
 │   ├── PROJECT_MEMORY.md
@@ -26,23 +27,35 @@ NestLaserDesktop/
 └── NestLaserDesktop/
     ├── NestLaserDesktop.csproj
     ├── App.xaml / App.xaml.cs
-    ├── MainWindow.xaml / MainWindow.xaml.cs
-    ├── Models/
+    ├── Geometry/
     │   ├── Point2D.cs
-    │   ├── Part.cs
-    │   ├── Plate.cs
-    │   └── NestResult.cs
+    │   ├── Polygon.cs
+    │   ├── BoundingBox.cs
+    │   └── GeometryUtils.cs
+    ├── Models/
+    │   ├── PartModel.cs
+    │   ├── PlateModel.cs
+    │   ├── NestResult.cs
+    │   ├── NestPlacement.cs
+    │   └── NestSettings.cs
     ├── Services/
     │   └── DxfService.cs
-    ├── Engine/
+    ├── Nesting/
     │   └── NestingEngine.cs
-    └── ViewModels/
-        └── MainViewModel.cs
+    ├── ViewModels/
+    │   └── MainViewModel.cs
+    ├── Views/
+    │   ├── MainWindow.xaml
+    │   └── MainWindow.xaml.cs
+    └── Utilities/
+        ├── AppConstants.cs
+        └── MathHelper.cs
 ```
 
 ## Mevcut Çalışan Özellikler (v0.1)
 - [x] DXF dosyası içe aktarma (LwPolyline, Polyline, Circle)
 - [x] Kapalı polyline/shape algılama
+- [x] Geometry modelleri (Point2D, Polygon, BoundingBox)
 - [x] Parça bounding box ve alan hesaplama
 - [x] Plaka genişliği/yüksekliği/kenar boşluğu/girilmesi
 - [x] 0/90 derece rotasyon desteği
@@ -50,17 +63,17 @@ NestLaserDesktop/
 - [x] Önizleme ekranında plaka ve parçaları gösterme
 - [x] Verimlilik ve fire oranı hesaplama
 - [x] Sonucu DXF olarak dışa aktarma
+- [x] NestSettings ile ayarlanabilir parametreler
 
 ## Bilinen Hatalar
 - Skyline çözümlemesi tam piksel çözünürlüğünde çalışmıyor (1mm adımla)
 - DXF export'ta parça kimlik bilgisi kaydedilmiyor (sadece geometri)
-- WinForms/MVVM dönüşümü henüz yapılmadı, test edilmedi
+- Çarpışma kontrolü yapılmıyor (sadece bounding box)
 
 ## Sınırlamalar
 - Sadece kapalı polylines ve circle destekleniyor
 - DXF blok/katman filtreleme yok
 - Gerçek kontur (concave) nesting henüz yok
-- Çarpışma kontrolü yapılmıyor (sadece bounding box)
 - Parça listesi.drag-drop veya çoklu dosya desteği yok
 
 ## Son Alınan Kararlar
@@ -69,9 +82,12 @@ NestLaserDesktop/
 3. İlk MVP bounding box nesting ile çalışacak
 4. netDxf.Standard kütüphanesi seçildi
 5. Skyline algoritması bottom-left yerine tercih edildi
+6. Geometry modelleri ayrı klasöre taşındı
+7. NestSettings ile ayarlar yapılandırılabilir hale getirildi
+8. Proje yapısı profesyonel düzeye çıkarıldı (Faz 1)
 
 ## Bir Sonraki Önerilen Adım
-- Parçaları Canvas üzerinde sürükleme (drag & drop)
-- DXF çoklu dosya desteği
-- Parça listesi görünümü (DataGrid)
-- Katman bazlı filtreleme
+- Faz 2: Parça listesi görünümü (DataGrid)
+- Faz 2: Çoklu dosya DXF desteği
+- Faz 2: Katman filtreleme
+- Faz 2: Önizleme zoom/pan

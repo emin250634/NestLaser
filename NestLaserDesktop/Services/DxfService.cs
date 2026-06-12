@@ -5,77 +5,91 @@ using System.Linq;
 using netDxf;
 using netDxf.Entities;
 using netDxf.Header;
+using NestLaserDesktop.Geometry;
 using NestLaserDesktop.Models;
+using NestLaserDesktop.Utilities;
 
 namespace NestLaserDesktop.Services;
 
 public static class DxfService
 {
-    public static List<Part> Import(string filePath)
+    public static List<PartModel> Import(string filePath)
     {
         var doc = DxfDocument.Load(filePath);
         if (doc == null)
             throw new InvalidOperationException($"DXF dosyası yüklenemedi: {filePath}");
 
-        var parts = new List<Part>();
+        var parts = new List<PartModel>();
+        string sourceFile = Path.GetFileNameWithoutExtension(filePath);
 
         foreach (var polyline in doc.Entities.LwPolylines)
         {
             if (!polyline.IsClosed) continue;
 
-            var part = new Part { Name = Path.GetFileNameWithoutExtension(filePath) + "_P" + (parts.Count + 1) };
-            var vertices = polyline.Vertexes.Select(v => new Point2D(v.Position.X, v.Position.Y)).ToList();
+            var polygon = new Polygon();
+            polygon.Vertices = polyline.Vertexes
+                .Select(v => new Point2D(v.Position.X, v.Position.Y))
+                .ToList();
 
-            if (vertices.Count < 3) continue;
+            if (polygon.Vertices.Count < 3) continue;
 
-            NormalizeWinding(vertices);
-            part.Vertices = vertices;
-            part.CalculateBounds();
-            parts.Add(part);
+            polygon.NormalizeWinding();
+            polygon.Calculate();
+
+            parts.Add(new PartModel
+            {
+                Name = $"{sourceFile}_P{parts.Count + 1}",
+                SourceFile = sourceFile,
+                LayerName = polyline.Layer?.Name ?? "0",
+                Geometry = polygon
+            });
         }
 
         foreach (var polyline in doc.Entities.Polylines)
         {
             if (!polyline.IsClosed) continue;
 
-            var part = new Part { Name = Path.GetFileNameWithoutExtension(filePath) + "_P" + (parts.Count + 1) };
-            var vertices = new List<Point2D>();
+            var polygon = new Polygon();
+            polygon.Vertices = polyline.Vertexes
+                .Select(v => new Point2D(v.Position.X, v.Position.Y))
+                .ToList();
 
-            foreach (var v in polyline.Vertexes)
+            if (polygon.Vertices.Count < 3) continue;
+
+            polygon.NormalizeWinding();
+            polygon.Calculate();
+
+            parts.Add(new PartModel
             {
-                vertices.Add(new Point2D(v.Position.X, v.Position.Y));
-            }
-
-            if (vertices.Count < 3) continue;
-
-            NormalizeWinding(vertices);
-            part.Vertices = vertices;
-            part.CalculateBounds();
-            parts.Add(part);
+                Name = $"{sourceFile}_P{parts.Count + 1}",
+                SourceFile = sourceFile,
+                LayerName = polyline.Layer?.Name ?? "0",
+                Geometry = polygon
+            });
         }
 
         foreach (var circle in doc.Entities.Circles)
         {
-            var part = new Part { Name = Path.GetFileNameWithoutExtension(filePath) + "_C" + (parts.Count + 1) };
-            var verts = new List<Point2D>();
-            int segments = 36;
-            double r = circle.Radius;
-            for (int i = 0; i < segments; i++)
+            var center = new Point2D(circle.Center.X, circle.Center.Y);
+            var vertices = GeometryUtils.CircleToPolygon(center, circle.Radius, AppConstants.CircleSegments);
+
+            var polygon = new Polygon();
+            polygon.Vertices = vertices;
+            polygon.Calculate();
+
+            parts.Add(new PartModel
             {
-                double angle = 2 * Math.PI * i / segments;
-                verts.Add(new Point2D(
-                    circle.Center.X + r * Math.Cos(angle),
-                    circle.Center.Y + r * Math.Sin(angle)));
-            }
-            part.Vertices = verts;
-            part.CalculateBounds();
-            parts.Add(part);
+                Name = $"{sourceFile}_C{parts.Count + 1}",
+                SourceFile = sourceFile,
+                LayerName = circle.Layer?.Name ?? "0",
+                Geometry = polygon
+            });
         }
 
         return parts;
     }
 
-    public static void Export(string filePath, Plate plate, List<NestPlacement> placements)
+    public static void Export(string filePath, PlateModel plate, List<NestPlacement> placements)
     {
         var doc = new DxfDocument(DxfVersion.R2010);
 
@@ -92,7 +106,7 @@ public static class DxfService
             var poly = new LwPolyline();
             poly.IsClosed = true;
 
-            foreach (var v in p.TransformedVertices)
+            foreach (var v in p.TransformedGeometry.Vertices)
             {
                 poly.Vertexes.Add(new LwPolylineVertex(v.X, v.Y));
             }
@@ -101,21 +115,5 @@ public static class DxfService
         }
 
         doc.Save(filePath);
-    }
-
-    private static void NormalizeWinding(List<Point2D> vertices)
-    {
-        double area = 0;
-        for (int i = 0; i < vertices.Count; i++)
-        {
-            int j = (i + 1) % vertices.Count;
-            area += vertices[i].X * vertices[j].Y;
-            area -= vertices[j].X * vertices[i].Y;
-        }
-
-        if (area < 0)
-        {
-            vertices.Reverse();
-        }
     }
 }

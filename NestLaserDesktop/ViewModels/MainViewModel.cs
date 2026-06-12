@@ -2,24 +2,25 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using Microsoft.Win32;
-using NestLaserDesktop.Engine;
 using NestLaserDesktop.Models;
+using NestLaserDesktop.Nesting;
 using NestLaserDesktop.Services;
+using NestLaserDesktop.Utilities;
 
 namespace NestLaserDesktop.ViewModels;
 
 public class MainViewModel : INotifyPropertyChanged
 {
-    private List<Part> _parts = new();
+    private List<PartModel> _parts = new();
     private NestResult? _nestResult;
-    private Plate _plate = new();
+    private PlateModel _plate = new();
+    private NestSettings _settings = new();
     private string _statusText = "Hazır";
 
-    public List<Part> Parts
+    public List<PartModel> Parts
     {
         get => _parts;
         set { _parts = value; OnPropertyChanged(); OnPropertyChanged(nameof(PartCount)); }
@@ -30,13 +31,27 @@ public class MainViewModel : INotifyPropertyChanged
     public NestResult? NestResult
     {
         get => _nestResult;
-        set { _nestResult = value; OnPropertyChanged(); OnPropertyChanged(nameof(EfficiencyText)); OnPropertyChanged(nameof(WasteText)); OnPropertyChanged(nameof(UnplacedCount)); }
+        set
+        {
+            _nestResult = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(EfficiencyText));
+            OnPropertyChanged(nameof(WasteText));
+            OnPropertyChanged(nameof(UnplacedCount));
+            OnPropertyChanged(nameof(PlacedCount));
+        }
     }
 
-    public Plate Plate
+    public PlateModel Plate
     {
         get => _plate;
         set { _plate = value; OnPropertyChanged(); }
+    }
+
+    public NestSettings Settings
+    {
+        get => _settings;
+        set { _settings = value; OnPropertyChanged(); }
     }
 
     public string StatusText
@@ -48,6 +63,7 @@ public class MainViewModel : INotifyPropertyChanged
     public string EfficiencyText => NestResult != null ? $"%{NestResult.Efficiency:F1}" : "--";
     public string WasteText => NestResult != null ? $"%{NestResult.WasteRate:F1}" : "--";
     public int UnplacedCount => NestResult?.Unplaced.Count ?? 0;
+    public int PlacedCount => NestResult?.Placed.Count ?? 0;
 
     public string PlateWidthText
     {
@@ -80,7 +96,7 @@ public class MainViewModel : INotifyPropertyChanged
 
     public void LoadDxf()
     {
-        var dlg = new OpenFileDialog { Filter = "DXF Dosyası (*.dxf)|*.dxf|Tüm Dosyalar (*.*)|*.*" };
+        var dlg = new OpenFileDialog { Filter = AppConstants.DxfFilter };
         if (dlg.ShowDialog() != true) return;
 
         try
@@ -104,7 +120,7 @@ public class MainViewModel : INotifyPropertyChanged
         }
 
         var engine = new NestingEngine();
-        NestResult = engine.Run(Parts, Plate, allowRotation: true);
+        NestResult = engine.Run(Parts, Plate, Settings);
         StatusText = $"Nesting tamamlandı: {NestResult.Placed.Count} yerleştirildi, {NestResult.Unplaced.Count} yerleşemedi";
     }
 
@@ -116,7 +132,7 @@ public class MainViewModel : INotifyPropertyChanged
             return;
         }
 
-        var dlg = new SaveFileDialog { Filter = "DXF Dosyası (*.dxf)|*.dxf", FileName = "nested_result.dxf" };
+        var dlg = new SaveFileDialog { Filter = AppConstants.DxfSaveFilter, FileName = "nested_result.dxf" };
         if (dlg.ShowDialog() != true) return;
 
         try
@@ -128,5 +144,12 @@ public class MainViewModel : INotifyPropertyChanged
         {
             MessageBox.Show($"Hata: {ex.Message}", "DXF Hata", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    public void ClearAll()
+    {
+        Parts = new List<PartModel>();
+        NestResult = null;
+        StatusText = "Temizlendi";
     }
 }
