@@ -34,35 +34,51 @@ public static class DxfService
 
             foreach (var entity in entities)
             {
-                if (entity.Vertices.Count < 2) continue;
-
-                var polygon = new Polygon();
-                polygon.Vertices = new List<Point2D>(entity.Vertices);
-
-                if (polygon.Vertices.Count >= 3)
+                try
                 {
-                    polygon.NormalizeWinding();
+                    if (entity.Vertices == null || entity.Vertices.Count < 2) continue;
+
+                    var validVertices = entity.Vertices
+                        .Where(v => !double.IsNaN(v.X) && !double.IsNaN(v.Y)
+                                    && !double.IsInfinity(v.X) && !double.IsInfinity(v.Y))
+                        .ToList();
+
+                    if (validVertices.Count < 2) continue;
+
+                    var polygon = new Polygon();
+                    polygon.Vertices = validVertices;
+
+                    if (polygon.Vertices.Count >= 3)
+                    {
+                        polygon.NormalizeWinding();
+                    }
+                    polygon.Calculate();
+
+                    if (polygon.Area < 0) continue;
+
+                    string prefix = entity.Type switch
+                    {
+                        DxfEntityType.LwPolyline => "LP",
+                        DxfEntityType.Polyline => "P",
+                        DxfEntityType.Circle => "C",
+                        DxfEntityType.Arc => "A",
+                        DxfEntityType.Line => "L",
+                        _ => "X"
+                    };
+
+                    partIndex++;
+                    result.Parts.Add(new PartModel
+                    {
+                        Name = $"{sourceFile}_{prefix}{partIndex}",
+                        SourceFile = sourceFile,
+                        LayerName = "0",
+                        Geometry = polygon
+                    });
                 }
-                polygon.Calculate();
-
-                string prefix = entity.Type switch
+                catch
                 {
-                    DxfEntityType.LwPolyline => "LP",
-                    DxfEntityType.Polyline => "P",
-                    DxfEntityType.Circle => "C",
-                    DxfEntityType.Arc => "A",
-                    DxfEntityType.Line => "L",
-                    _ => "X"
-                };
-
-                partIndex++;
-                result.Parts.Add(new PartModel
-                {
-                    Name = $"{sourceFile}_{prefix}{partIndex}",
-                    SourceFile = sourceFile,
-                    LayerName = "0",
-                    Geometry = polygon
-                });
+                    partIndex++;
+                }
             }
 
             result.TotalArea = result.Parts.Sum(p => p.Area);
@@ -83,39 +99,37 @@ public static class DxfService
 
     public static void Export(string filePath, PlateModel plate, List<NestPlacement> placements)
     {
-        try
+        if (string.IsNullOrEmpty(filePath)) throw new ArgumentException("Dosya yolu boş olamaz.");
+        if (plate == null) throw new ArgumentNullException(nameof(plate));
+        if (placements == null) throw new ArgumentNullException(nameof(placements));
+
+        var lines = new List<string>();
+
+        lines.Add("0");
+        lines.Add("SECTION");
+        lines.Add("2");
+        lines.Add("ENTITIES");
+
+        WriteLwPolyline(lines, "Plate", new List<Geometry.Point2D>
         {
-            var lines = new List<string>();
+            new(0, 0),
+            new(plate.Width, 0),
+            new(plate.Width, plate.Height),
+            new(0, plate.Height)
+        }, true);
 
-            lines.Add("0");
-            lines.Add("SECTION");
-            lines.Add("2");
-            lines.Add("ENTITIES");
-
-            WriteLwPolyline(lines, "Plate", new List<Geometry.Point2D>
-            {
-                new(0, 0),
-                new(plate.Width, 0),
-                new(plate.Width, plate.Height),
-                new(0, plate.Height)
-            }, true);
-
-            foreach (var p in placements)
-            {
-                WriteLwPolyline(lines, "Parts", p.TransformedGeometry.Vertices, true);
-            }
-
-            lines.Add("0");
-            lines.Add("ENDSEC");
-            lines.Add("0");
-            lines.Add("EOF");
-
-            File.WriteAllLines(filePath, lines);
-        }
-        catch (Exception ex)
+        foreach (var p in placements)
         {
-            throw new InvalidOperationException($"DXF yazma hatası: {ex.Message}", ex);
+            if (p?.TransformedGeometry?.Vertices == null || p.TransformedGeometry.Vertices.Count < 2) continue;
+            WriteLwPolyline(lines, "Parts", p.TransformedGeometry.Vertices, true);
         }
+
+        lines.Add("0");
+        lines.Add("ENDSEC");
+        lines.Add("0");
+        lines.Add("EOF");
+
+        File.WriteAllLines(filePath, lines);
     }
 
     private static void WriteLwPolyline(List<string> lines, string layer, List<Geometry.Point2D> vertices, bool closed)

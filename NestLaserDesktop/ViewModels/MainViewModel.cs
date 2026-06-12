@@ -26,6 +26,7 @@ public class MainViewModel : INotifyPropertyChanged
     private string _fileName = string.Empty;
     private bool _isLoading;
     private double _totalPartsArea;
+    private string _zoomPercent = "100";
 
     public ObservableCollection<PartModel> Parts
     {
@@ -144,6 +145,12 @@ public class MainViewModel : INotifyPropertyChanged
         set { if (double.TryParse(value, out double v) && v >= 0) { Plate.Gap = v; OnPropertyChanged(); } }
     }
 
+    public string ZoomPercent
+    {
+        get => _zoomPercent;
+        set { _zoomPercent = value; OnPropertyChanged(); }
+    }
+
     public RelayCommand OpenDxfCommand { get; }
     public RelayCommand RunNestingCommand { get; }
     public RelayCommand ExportDxfCommand { get; }
@@ -193,7 +200,8 @@ public class MainViewModel : INotifyPropertyChanged
             }
             else
             {
-                StatusText = $"{Parts.Count} parça yüklendi: {result.FileName} ({result.TotalArea:F0} mm²)";
+                string warnings = result.Warnings.Count > 0 ? $" ({string.Join(", ", result.Warnings)})" : "";
+                StatusText = $"{Parts.Count} parça yüklendi: {result.FileName} ({result.TotalArea:F0} mm²){warnings}";
             }
 
             RequestDrawPreview?.Invoke();

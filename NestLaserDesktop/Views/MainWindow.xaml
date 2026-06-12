@@ -131,11 +131,11 @@
                                     <StackPanel Margin="2">
                                         <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="#DCDCAA" />
                                         <TextBlock Foreground="#808080" FontSize="10">
-                                            <Run Text="{Binding Width, StringFormat={}{0:F1}}" />
+                                            <Run Text="{Binding Width, Mode=OneWay, StringFormat={}{0:F1}}" />
                                             <Run Text="x" />
-                                            <Run Text="{Binding Height, StringFormat={}{0:F1}}" />
+                                            <Run Text="{Binding Height, Mode=OneWay, StringFormat={}{0:F1}}" />
                                             <Run Text=" mm | " />
-                                            <Run Text="{Binding Area, StringFormat={}{0:F0}}" />
+                                            <Run Text="{Binding Area, Mode=OneWay, StringFormat={}{0:F0}}" />
                                             <Run Text=" mm²" />
                                         </TextBlock>
                                     </StackPanel>
@@ -224,14 +224,72 @@
 
         <!-- Sağ: Önizleme -->
         <Grid Grid.Column="1">
-            <Border Background="#1E1E1E" BorderBrush="#3C3C3C" BorderThickness="1">
-                <Canvas x:Name="NestCanvas" ClipToBounds="True"
-                        SizeChanged="NestCanvas_SizeChanged" />
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" Background="#1E1E1E" BorderBrush="#3C3C3C" BorderThickness="1">
+                <Grid>
+                    <Canvas x:Name="NestCanvas" ClipToBounds="True"
+                            SizeChanged="NestCanvas_SizeChanged"
+                            MouseWheel="NestCanvas_MouseWheel"
+                            MouseDown="NestCanvas_MouseDown"
+                            MouseMove="NestCanvas_MouseMove"
+                            MouseUp="NestCanvas_MouseUp"
+                            Background="Transparent" />
+
+                    <!-- Fit to Screen Butonu -->
+                    <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8">
+                        <Button Content="Fit" Click="FitToScreen_Click"
+                                Padding="6,2" Background="#3C3C3C" Foreground="#CCCCCC"
+                                BorderThickness="1" BorderBrush="#555" FontSize="10"
+                                ToolTip="Sığdır (Fit to Screen)" />
+                        <Button Content="1:1" Click="ResetZoom_Click"
+                                Padding="6,2" Background="#3C3C3C" Foreground="#CCCCCC"
+                                BorderThickness="1" BorderBrush="#555" FontSize="10" Margin="0,4,0,0"
+                                ToolTip="Gerçek boyut (100%)" />
+                    </StackPanel>
+
+                    <!-- Boş durum mesajı -->
+                    <TextBlock Text="DXF yüklendiğinde önizleme gösterilecek"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Foreground="#555" FontSize="13"
+                               Visibility="{Binding PartCount, Converter={StaticResource IntToZeroConverter}}" />
+                </Grid>
             </Border>
-            <TextBlock Text="DXF yüklendiğinde önizleme gösterilecek"
-                       HorizontalAlignment="Center" VerticalAlignment="Center"
-                       Foreground="#555" FontSize="13"
-                       Visibility="{Binding PartCount, Converter={StaticResource IntToZeroConverter}}" />
+
+            <!-- Önizleme Durum Çubuğu -->
+            <Border Grid.Row="1" Background="#252526" BorderBrush="#3C3C3C" BorderThickness="0,1,0,0"
+                    Padding="8,4">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0" Foreground="#808080" FontSize="10"
+                               FontFamily="Consolas">
+                        <Run Text="Zoom: " />
+                        <Run Text="{Binding ZoomPercent, Mode=OneWay}" Foreground="#CCCCCC" />
+                        <Run Text="%" />
+                    </TextBlock>
+
+                    <TextBlock Grid.Column="1" Foreground="#808080" FontSize="10"
+                               FontFamily="Consolas" HorizontalAlignment="Center">
+                        <Run Text="Parça: " />
+                        <Run Text="{Binding PartCount, Mode=OneWay}" Foreground="#4EC9B0" />
+                        <Run Text="  |  Alan: " />
+                        <Run Text="{Binding TotalPartsAreaText, Mode=OneWay}" Foreground="#4EC9B0" />
+                    </TextBlock>
+
+                    <TextBlock Grid.Column="2" Foreground="#808080" FontSize="10"
+                               FontFamily="Consolas">
+                        <Run Text="Fare: Tek = Seç, Sil = Sil" />
+                    </TextBlock>
+                </Grid>
+            </Border>
         </Grid>
     </Grid>
 </Window>
