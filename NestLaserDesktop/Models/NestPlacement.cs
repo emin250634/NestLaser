@@ -14,5 +14,6 @@ public class NestPlacement
     public int PlateIndex { get; set; }
     public double Width { get; set; }
     public double Height { get; set; }
+    public double PlacementScore { get; set; }
     public Polygon TransformedGeometry { get; set; } = new();
 }

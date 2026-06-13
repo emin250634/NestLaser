@@ -35,6 +35,8 @@ internal static class DxfParser
                         continue;
                     }
 
+                    value = value.ToUpperInvariant();
+
                     if (code == "0" && value == "LWPOLYLINE")
                     {
                         var entity = ParseLwPolyline(lines, ref i);
@@ -58,6 +60,16 @@ internal static class DxfParser
                     else if (code == "0" && value == "LINE")
                     {
                         var entity = ParseLine(lines, ref i);
+                        if (entity != null) entities.Add(entity);
+                    }
+                    else if (code == "0" && value == "SPLINE")
+                    {
+                        var entity = ParseSpline(lines, ref i);
+                        if (entity != null) entities.Add(entity);
+                    }
+                    else if (code == "0" && value == "ELLIPSE")
+                    {
+                        var entity = ParseEllipse(lines, ref i);
                         if (entity != null) entities.Add(entity);
                     }
                     else
@@ -85,6 +97,7 @@ internal static class DxfParser
         {
             var vertices = new List<Point2D>();
             bool isClosed = false;
+            string layerName = string.Empty;
             double x = 0, y = 0;
             bool readingVertex = false;
 
@@ -100,6 +113,10 @@ internal static class DxfParser
                 {
                     if (int.TryParse(value, out int flags))
                         isClosed = (flags & 1) == 1;
+                }
+                else if (code == "8")
+                {
+                    layerName = value;
                 }
                 else if (code == "10")
                 {
@@ -128,7 +145,8 @@ internal static class DxfParser
             {
                 Type = DxfEntityType.LwPolyline,
                 Vertices = vertices,
-                IsClosed = isClosed
+                IsClosed = isClosed,
+                LayerName = layerName
             };
         }
         catch
@@ -144,6 +162,7 @@ internal static class DxfParser
         {
             var vertices = new List<Point2D>();
             bool isClosed = false;
+            string layerName = string.Empty;
 
             int i = startIndex + 2;
             while (i < lines.Length - 1)
@@ -155,6 +174,12 @@ internal static class DxfParser
                 {
                     if (int.TryParse(value, out int flags))
                         isClosed = (flags & 1) == 1;
+                    i += 2;
+                }
+                else if (code == "8")
+                {
+                    layerName = value;
+                    i += 2;
                 }
                 else if (code == "0" && value == "VERTEX")
                 {
@@ -193,7 +218,8 @@ internal static class DxfParser
             {
                 Type = DxfEntityType.Polyline,
                 Vertices = vertices,
-                IsClosed = isClosed
+                IsClosed = isClosed,
+                LayerName = layerName
             };
         }
         catch
@@ -208,6 +234,7 @@ internal static class DxfParser
         try
         {
             double cx = 0, cy = 0, radius = 0;
+            string layerName = string.Empty;
 
             int i = startIndex + 2;
             while (i < lines.Length - 1)
@@ -218,6 +245,7 @@ internal static class DxfParser
                 if (code == "0") break;
 
                 if (code == "10") cx = ParseDouble(value);
+                else if (code == "8") layerName = value;
                 else if (code == "20") cy = ParseDouble(value);
                 else if (code == "40") radius = ParseDouble(value);
 
@@ -238,11 +266,14 @@ internal static class DxfParser
                     cy + radius * Math.Sin(angle)));
             }
 
+            startIndex = i;
+
             return new DxfEntity
             {
                 Type = DxfEntityType.Circle,
                 Vertices = vertices,
-                IsClosed = true
+                IsClosed = true,
+                LayerName = layerName
             };
         }
         catch
@@ -257,6 +288,7 @@ internal static class DxfParser
         try
         {
             double cx = 0, cy = 0, radius = 0, startAngle = 0, endAngle = 0;
+            string layerName = string.Empty;
 
             int i = startIndex + 2;
             while (i < lines.Length - 1)
@@ -267,6 +299,7 @@ internal static class DxfParser
                 if (code == "0") break;
 
                 if (code == "10") cx = ParseDouble(value);
+                else if (code == "8") layerName = value;
                 else if (code == "20") cy = ParseDouble(value);
                 else if (code == "40") radius = ParseDouble(value);
                 else if (code == "50") startAngle = ParseDouble(value);
@@ -305,7 +338,8 @@ internal static class DxfParser
             {
                 Type = DxfEntityType.Arc,
                 Vertices = vertices,
-                IsClosed = false
+                IsClosed = false,
+                LayerName = layerName
             };
         }
         catch
@@ -320,6 +354,7 @@ internal static class DxfParser
         try
         {
             double x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+            string layerName = string.Empty;
 
             int i = startIndex + 2;
             while (i < lines.Length - 1)
@@ -330,6 +365,7 @@ internal static class DxfParser
                 if (code == "0") break;
 
                 if (code == "10") x1 = ParseDouble(value);
+                else if (code == "8") layerName = value;
                 else if (code == "20") y1 = ParseDouble(value);
                 else if (code == "11") x2 = ParseDouble(value);
                 else if (code == "21") y2 = ParseDouble(value);
@@ -347,7 +383,143 @@ internal static class DxfParser
             {
                 Type = DxfEntityType.Line,
                 Vertices = new List<Point2D> { new Point2D(x1, y1), new Point2D(x2, y2) },
-                IsClosed = false
+                IsClosed = false,
+                LayerName = layerName
+            };
+        }
+        catch
+        {
+            startIndex = Math.Min(startIndex + 2, lines.Length);
+            return null;
+        }
+    }
+
+    private static DxfEntity? ParseSpline(string[] lines, ref int startIndex)
+    {
+        try
+        {
+            var vertices = new List<Point2D>();
+            string layerName = string.Empty;
+            double x = 0, y = 0;
+            bool readingPoint = false;
+
+            int i = startIndex + 2;
+            while (i < lines.Length - 1)
+            {
+                string code = lines[i]?.Trim() ?? string.Empty;
+                string value = lines[i + 1]?.Trim() ?? string.Empty;
+
+                if (code == "0") break;
+
+                if (code == "8")
+                {
+                    layerName = value;
+                }
+                else if (code == "10" || code == "11")
+                {
+                    if (readingPoint)
+                        vertices.Add(new Point2D(x, y));
+                    x = ParseDouble(value);
+                    y = 0;
+                    readingPoint = true;
+                }
+                else if (code == "20" || code == "21")
+                {
+                    y = ParseDouble(value);
+                }
+
+                i += 2;
+            }
+
+            if (readingPoint)
+                vertices.Add(new Point2D(x, y));
+
+            startIndex = i;
+
+            if (vertices.Count < 2) return null;
+
+            return new DxfEntity
+            {
+                Type = DxfEntityType.Spline,
+                Vertices = vertices,
+                IsClosed = false,
+                LayerName = layerName
+            };
+        }
+        catch
+        {
+            startIndex = Math.Min(startIndex + 2, lines.Length);
+            return null;
+        }
+    }
+
+    private static DxfEntity? ParseEllipse(string[] lines, ref int startIndex)
+    {
+        try
+        {
+            double cx = 0, cy = 0;
+            double majorX = 0, majorY = 0;
+            double ratio = 1;
+            double startParam = 0;
+            double endParam = 2 * Math.PI;
+            string layerName = string.Empty;
+
+            int i = startIndex + 2;
+            while (i < lines.Length - 1)
+            {
+                string code = lines[i]?.Trim() ?? string.Empty;
+                string value = lines[i + 1]?.Trim() ?? string.Empty;
+
+                if (code == "0") break;
+
+                if (code == "8") layerName = value;
+                else if (code == "10") cx = ParseDouble(value);
+                else if (code == "20") cy = ParseDouble(value);
+                else if (code == "11") majorX = ParseDouble(value);
+                else if (code == "21") majorY = ParseDouble(value);
+                else if (code == "40") ratio = ParseDouble(value);
+                else if (code == "41") startParam = ParseDouble(value);
+                else if (code == "42") endParam = ParseDouble(value);
+
+                i += 2;
+            }
+
+            startIndex = i;
+
+            double majorLength = Math.Sqrt(majorX * majorX + majorY * majorY);
+            if (majorLength <= 0 || ratio <= 0) return null;
+
+            if (endParam < startParam)
+                endParam += 2 * Math.PI;
+
+            double span = endParam - startParam;
+            if (span <= 0 || double.IsNaN(span) || double.IsInfinity(span))
+                span = 2 * Math.PI;
+
+            double ux = majorX / majorLength;
+            double uy = majorY / majorLength;
+            double minorLength = majorLength * ratio;
+            double vx = -uy;
+            double vy = ux;
+            int segments = Math.Clamp((int)(span / (Math.PI / 36)), 24, 144);
+
+            var vertices = new List<Point2D>();
+            for (int j = 0; j <= segments; j++)
+            {
+                double t = startParam + span * j / segments;
+                double x = cx + majorLength * Math.Cos(t) * ux + minorLength * Math.Sin(t) * vx;
+                double y = cy + majorLength * Math.Cos(t) * uy + minorLength * Math.Sin(t) * vy;
+                vertices.Add(new Point2D(x, y));
+            }
+
+            startIndex = i;
+
+            return new DxfEntity
+            {
+                Type = DxfEntityType.Ellipse,
+                Vertices = vertices,
+                IsClosed = Math.Abs(span - 2 * Math.PI) < 1e-4,
+                LayerName = layerName
             };
         }
         catch
@@ -372,7 +544,9 @@ internal enum DxfEntityType
     Polyline,
     Circle,
     Arc,
-    Line
+    Line,
+    Spline,
+    Ellipse
 }
 
 internal class DxfEntity
@@ -380,4 +554,5 @@ internal class DxfEntity
     public DxfEntityType Type { get; set; }
     public List<Point2D> Vertices { get; set; } = new();
     public bool IsClosed { get; set; }
+    public string LayerName { get; set; } = string.Empty;
 }

@@ -26,4 +26,7 @@ public struct BoundingBox
 
     public bool Intersects(BoundingBox other)
         => MinX <= other.MaxX && MaxX >= other.MinX && MinY <= other.MaxY && MaxY >= other.MinY;
+
+    public bool Contains(BoundingBox other)
+        => MinX <= other.MinX && MaxX >= other.MaxX && MinY <= other.MinY && MaxY >= other.MaxY;
 }
