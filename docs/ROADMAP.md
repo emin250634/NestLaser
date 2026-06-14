@@ -1,62 +1,57 @@
-# ROADMAP.md — NestLaser Desktop
+# Roadmap — NestLaser Desktop
 
-## v0.1 — İlk MVP ✅
-- [x] Proje yapısı oluşturuldu
-- [x] DXF import (LwPolyline, Polyline, Circle)
-- [x] Kapalı parça algılama
-- [x] Bounding box hesaplama
-- [x] Plaka ayarları
-- [x] 0/90° rotasyon desteği
-- [x] Skyline bottom-left nesting
-- [x] Canvas önizleme
-- [x] Verimlilik/fire oranı hesaplama
-- [x] DXF export
+## ✅ Completed Phases
 
-## v0.1.1 — Faz 1: Altyapı Sağlamlaştırma ✅
-- [x] README.md
-- [x] Geometry klasörü
-- [x] Modeller yeniden yapılandırıldı
-- [x] Nesting/, Views/, Utilities/ klasörleri
+| Phase | Description | Status |
+|-------|-------------|--------|
+| FAZ 8A | Core DXF Import/Export + Part Management | ✅ |
+| FAZ 8B | Nesting Engine (Free Rectangle + Polygon Collision) | ✅ |
+| FAZ 8C | Layer System + Preview/Rendering | ✅ |
+| FAZ 8D | Project System (.nelp) + Undo/Redo + Analysis | ✅ |
+| FAZ 8E | Operation Manager & Laser Process Pipeline | ✅ |
+| FAZ 8F | Technical Audit + Expected Behavior Validation | ✅ |
+| FAZ 8F.1 | Geometry Integrity Cleanup (winding, validation, undo) | ✅ |
+| FAZ 8G | Operation Manager & Production Pipeline | ✅ |
+| **FAZ 8H** | **Material Database & Machine Profiles** | **✅ Current** |
 
-## v0.2 — Faz 2: DXF Import ve Önizleme ✅
-- [x] RelayCommand ICommand pattern
-- [x] DxfService Arc/Line desteği
-- [x] DxfImportResult
-- [x] ObservableCollection parça listesi
-- [x] Gerçek kontur çizimi
+## Future Phases
 
-## v0.3 — Faz 3: Bounding Box Nesting ✅
-- [x] Overlap kontrolü
-- [x] Çoklu plaka desteği
-- [x] NestPlacement PlateIndex/Width/Height
-- [x] NestResult Plates listesi
-- [x] Plaka validasyonu
-- [x] Büyük parça uyarısı
-- [x] Rapor alanı (toplam, yerleşen, sığmayan, plaka, verimlilik, fire)
-- [x] YERLEŞTİR butonu
-- [x] Çoklu plaka yan yana önizleme
-- [x] Margin gösterimi (kesikli çizgi)
+### FAZ 9 — No-Fit Polygon (NFP)
+- NFP generation for two arbitrary polygons
+- Integration with nesting engine for dense irregular packing
+- Depends on: CCW winding (✅), CleanupVertices (✅), IsValid (✅)
 
-## v0.4 — Faz 4: Geliştirilmiş Import
-- [ ] DXF çoklu dosya desteği
-- [ ] DXF katman filtreleme
-- [ ] Parça sürükleme (drag & drop)
-- [ ] Önizleme zoom/pan
-- [ ] Parça adı/ID düzenleme
-- [ ] PartQuantity (çoklu kopya)
-- [ ] Ayarları kaydet/yükle (JSON)
+### FAZ 10 — Common Line Cutting
+- Shared edge detection between adjacent placed parts
+- Reduced cutting path length and time
+- Export visualization of common lines
 
-## v0.5 — Faz 5: Profesyonel Özellikler
-- [ ] Gerçek kontur nesting (concave polygon)
-- [ ] Çarpışma kontrolü (SAT / Minkowski)
-- [ ] RDWorks uyumlu DXF formatı
-- [ ] Rapor PDF çıktısı
+### FAZ 11 — Offset Path / Kerf Compensation
+- Inner/outer offset generation for laser kerf
+- Compensation for material thickness and beam width
+- Test pattern generation for kerf calibration
 
-## v1.0 — Tam Sürüm
-- [ ] Tam kontur nesting algoritması
-- [ ] Çoklu plaka optimizasyonu
-- [ ] Otomatik parça sıralama stratejileri
-- [ ] Toplu iş processing
-- [ ] Preset yönetimi (malzeme/kalınlık)
-- [ ] Keyboard shortcuts
-- [ ] Auto-update mekanizması
+### FAZ 12 — Toolpath Generation
+- G-code or proprietary format generation
+- Operation-based toolpath sequencing (Engrave → Mark → CutInner → CutOuter)
+- Lead-in/lead-out, pierce points, micro-joints
+
+### FAZ 13 — Machine Control Integration
+- Direct machine communication (Ethernet/Serial)
+- Job queue management
+- Production monitoring and logging
+
+### Future: Cost Estimation / AI Recommendation / Material Optimization / Machine Analytics
+- Based on material/machine profile infrastructure (FAZ 8H)
+- Material cost estimation per project
+- AI-powered power/speed/pass recommendations
+- Machine utilization analytics
+
+## Technical Debt / Low Priority
+
+| Item | Notes |
+|------|-------|
+| Concurrent nesting (background thread) | UI blocks during nesting |
+| Unit parsing from DXF header | Currently assumes mm |
+| Tessellation quality control for curves | Configurable segment count |
+| Collision cache precision | 0.1mm may cause misses |

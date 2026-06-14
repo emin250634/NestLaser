@@ -1,165 +1,114 @@
-# DEVELOPMENT_LOG.md — NestLaser Desktop
+# Development Log — NestLaser Desktop
 
-## 2026-06-12 13:15 — İlk MVP Oluşturma
-**Yapılan işlem:** İlk MVP sürümü oluşturuldu
-**Değişen dosyalar:** Models/, Services/, Engine/, ViewModels/, MainWindow.xaml
-**Neden yapıldı:** CorelDRAW VBA yetersizliği
-**Sonuç:** Temel MVP tamamlandı
-**Sonraki adım:** Proje iskeletini profesyonel hale getirmek
+## 2026-06-13 — FAZ 8H: Material Database & Machine Profiles
 
----
+### Completed
+- **MaterialProfile model**: Id, Name, Category, ThicknessMm, Density, Notes, IsDefault, DisplayName
+- **MachineProfile model**: Id, Name, Manufacturer, Model, LaserType, WorkingAreaX, WorkingAreaY, Notes
+- **MaterialOperationSetting model**: MaterialId, MachineId, OperationType, Power, Speed, PassCount, Frequency, AirAssist, Notes
+- **MaterialProfileService**: Full CRUD for all three types with JSON persistence in AppData/NestLaser/profiles/
+- **Seed data**: 18 materials (MDF/Pleksi/Kontraplak/Paslanmaz/Galvaniz/Deri/Karton/Kumaş with various thicknesses), 7 machines (Ruida 100W/130W/150W, CO2 Generic 80W, Fiber 20W/30W/50W), 28 operation settings (covering MDF/Pleksi + Ruida combinations for CutOuter/CutInner/Engrave/Mark)
+- **MainViewModel integration**: Materials/Machines/MaterialSettings collections, SelectedMaterial/SelectedMachine bindings, ApplyMaterialSettingsToCurrentOperation(), CRUD commands
+- **Malzemeler tab**: New tab in the sidebar with material selection (filterable), machine selection, CRUD buttons, operation settings info, and "Apply to Operation" button
+- **Project system**: SelectedMaterialId and SelectedMachineId saved in .nelp, restored on load
+- **Export report**: Material name and machine name shown in MALZEME & MAKİNE section of export-report.txt
+- **Operation auto-suggest**: When material and machine are selected, Power/Speed/Pass are auto-suggested from matching MaterialOperationSetting
 
-## 2026-06-12 13:50 — Faz 1: Altyapı Sağlamlaştırma
-**Yapılan işlem:** Proje yapısı yeniden yapılandırıldı
-**Değişen dosyalar:** Geometry/, Models/, Nesting/, Views/, Utilities/, README.md
-**Neden yapıldı:** Modüler mimari
-**Sonuç:** Profesyonel mimari oluşturuldu
-**Sonraki adım:** Faz 2 — DXF Import
+### Files Created
+- `Models/MaterialProfile.cs`
+- `Models/MachineProfile.cs`
+- `Models/MaterialOperationSetting.cs`
+- `Services/MaterialProfileService.cs`
 
----
+### Files Changed
+- `Models/NestLaserProject.cs`: Added SelectedMaterialId, SelectedMachineId
+- `Models/DxfExportReport.cs`: Added MaterialName, MachineName
+- `ViewModels/MainViewModel.cs`: Added material/machine fields, properties, commands, methods
+- `Services/DxfService.cs`: Added material/machine parameters to Export(), updated report
+- `Views/MainWindow.xaml`: Added Malzemeler tab
 
-## 2026-06-12 14:30 — Faz 2: DXF Import ve Önizleme
-**Yapılan işlem:** DXF import genişletildi, MVVM güçlendirildi
-**Değişen dosyalar:** DxfService.cs, RelayCommand.cs, MainViewModel.cs, MainWindow.xaml
-**Neden yapıldı:** Daha iyi DXF desteği ve MVVM
-**Sonuç:** Arc/Line desteği, ICommand, ObservableCollection
-**Sonraki adım:** Faz 3 — Nesting
-
----
-
-## 2026-06-12 15:15 — Faz 3: Bounding Box Nesting ve Önizleme
-**Yapılan işlem:** NestingEngine geliştirildi, çoklu plaka desteği eklendi, rapor alanı oluşturuldu
-
-**Değişen dosyalar:**
-- `Nesting/NestingEngine.cs` — Overlap kontrolü, çoklu plaka, yeniden deneme mantığı
-- `Models/NestPlacement.cs` — PlateIndex, Width, Height, PartId, PartName eklendi
-- `Models/NestResult.cs` — Plates listesi, PlateCount, UsedAreaText, TotalPlateAreaText
-- `ViewModels/MainViewModel.cs` — Plaka validasyonu, büyük parça uyarısı, rapor özellikleri
-- `Views/MainWindow.xaml` — YERLEŞTİR butonu, rapor alanı, plaka ayarları yan yana
-- `Views/MainWindow.xaml.cs` — Çoklu plaka çizimi, margin gösterimi
-
-**Neden yapıldı:**
-- Parçaların otomatik yerleştirilmesi
-- Çoklu plaka senaryolarının desteklenmesi
-- Çarpışma önlenmesi
-- Kullanıcıya detaylı rapor sunulması
-
-**Sonuç:**
-- Skyline + overlap kontrolü ile nesting
-- Birden fazla plaka otomatik oluşturuluyor
-- Plaka margin'i kesikli çizgi ile gösteriliyor
-- Rapor: toplam, yerleşen, sığmayan, plaka sayısı, verimlilik, fire
-- Plaka ölçüsü validasyonu
-- Büyük parça uyarısı
-
-**Sonraki adım:**
-- Faz 4: DXF çoklu dosya desteği
-- Faz 4: Katman filtreleme
+### Build
+- `dotnet build` → ✅ 0 warning, 0 error
 
 ---
 
-## 2026-06-12 15:30 — NuGet Paket Düzeltmesi
-**Yapılan işlem:** netDxf.Standard sürümü 3.0.0 → 2.1.1 olarak düşürüldü
+## 2026-06-13 — FAZ 8G: Operation Manager & Production Pipeline
 
-**Değişen dosyalar:**
-- `NestLaserDesktop.csproj` — PackageReference Version="2.1.1"
-- `Services/DxfService.cs` — `doc.AddEntity` → `doc.Entities.Add` (2.x API uyumu)
+### Completed
+- **LaserOperation model**: Added `LayerName` and `Color` fields to track source layer info directly on operations. Updated `Clone()` and all creation sites.
+- **PartModel**: Added `IsInnerCandidate` and `IsOuterCandidate` boolean flags for geometry classification. Updated `Clone()`.
+- **Layer name auto-mapping**: New `MapLayerNameToOperationType()` helper analyzes layer names for keywords (engrave, mark, reference, cut) and suggests the matching OperationType. Integrated into `AutoSuggestOperations()` as a supplement to existing LayerType mapping.
+- **Inner/Outer candidate marking**: `AnalyzeInnerOuterCut()` now sets `IsInnerCandidate`/`IsOuterCandidate` on all PartModel objects based on polygon containment analysis.
+- **Export report enhancement**: Added total operation count and active operation count to the operation order section. Added `TotalOperationCount` and `ActiveOperationCount` fields to `DxfExportReport`.
+- **ARCHITECTURE.md**: Created with full layer diagram (Geometry, Nesting, Import/Export, Project, Operation, UI), data flow documentation, future-phase preparation notes (NFP, Common Line Cutting, Toolpath), and key design decisions.
 
-**Neden yapıldı:**
-NuGet üzerinde netDxf.Standard 3.0.0 bulunamıyor. En yakın sürüm 2.1.1.
+### Files Changed
+- `Models/LaserOperation.cs`: Added `LayerName`, `Color` fields + Clone update
+- `Models/PartModel.cs`: Added `IsInnerCandidate`, `IsOuterCandidate` + Clone update
+- `Models/DxfExportReport.cs`: Added `TotalOperationCount`, `ActiveOperationCount`
+- `ViewModels/MainViewModel.cs`: Added `MapLayerNameToOperationType()`, updated `AutoSuggestOperations()`, `AnalyzeInnerOuterCut()`, `AddOperation()`, `EnsureDefaultOperations()`
+- `Services/DxfService.cs`: Updated export report section with operation counts
 
-**Sonuç:**
-- paket sürümü 2.1.1 olarak güncellendi
-- DxfService 2.x API'si ile uyumlu hale getirildi
-- `doc.AddEntity()` → `doc.Entities.Add()` değişikliği yapıldı
+### Files Created
+- `docs/ARCHITECTURE.md`
+- `docs/PROJECT_MEMORY.md`
+- `docs/DEVELOPMENT_LOG.md`
+- `docs/ROADMAP.md`
+- `docs/TEST_NOTES.md`
 
-**Sonraki adım:**
-- dotnet build ile doğrulama
-
----
-
-## 2026-06-12 15:45 — Build Hataları Düzeltmesi
-**Yapılan işlem:** 6 farklı build hatası giderildi
-
-**Değişen dosyalar:**
-- `Services/DxfService.cs` — netDxf 2.x API uyumu
-- `Views/MainWindow.xaml.cs` — Değişken çakışması, List.Count
-- `ViewModels/MainViewModel.cs` — RelayCommand constructor
-
-**Düzeltilen hatalar:**
-1. `doc.Entities.LwPolylines` → `doc.Entities.OfType<LwPolyline>()`
-2. `doc.Entities.Polylines` → `doc.Entities.OfType<Polyline>()`
-3. `doc.Entities.Circles` → `doc.Entities.OfType<Circle>()`
-4. `doc.Entities.Arcs` → `doc.Entities.OfType<Arc>()`
-5. `doc.Entities.Lines` → `doc.Entities.OfType<Line>()`
-6. `DxfVersion.R2010` → `new DxfDocument()` (varsayılan)
-7. `colors.Length` → `colors.Count` (3 yer)
-8. `scaleX/scaleY/scale` çakışması → `multiScaleX/multiScaleY`
-9. `new RelayCommand(OpenDxf)` → `new RelayCommand(_ => OpenDxf())`
-
-**Neden yapıldı:**
-- netDxf.Standard 2.1.1 API'si 3.0'dan farklı
-- C# derleyici değişken çakışmasını reddediyor
-- List<T> için `.Length` değil `.Count` kullanılır
-- RelayCommand Action<object?> bekliyor, method group çevrilemez
-
-**Sonuç:**
-Tüm build hataları giderildi. `dotnet build` başarılı olmalı.
+### Build
+- `dotnet build` → ✅ 0 warning, 0 error
 
 ---
 
-## 2026-06-12 16:00 — Final Build Düzeltmesi
-**Yapılan işlem:** netDxf.Standard API uyuşmazlığı tamamen giderildi
+## 2026-06-13 — FAZ 8F.1: Geometry Integrity Cleanup
 
-**Değişen dosyalar:**
-- `NestLaserDesktop.csproj` — netDxf.Standard referansı devre dışı bırakıldı
-- `Services/DxfService.cs` — Sade DXF import/export ile yeniden yazıldı
-- `Views/MainWindow.xaml.cs` — scale değişken çakışması giderildi
+### Completed
+- **MirrorX/MirrorY winding fix**: Replaced `Vertices.Reverse()` with `NormalizeWinding()` to preserve CCW winding after mirror operations (Polygon.cs:206,219).
+- **Polygon.IsValid()**: Added validation checks (≥3 vertices, area > 1e-9, no NaN/Infinity) at Polygon.cs:223.
+- **Polygon.CleanupVertices()**: Added sequential duplicate removal, closing-duplicate removal, and collinear point removal with repeat-pass (Polygon.cs:236).
+- **DxfService validation pipeline**: Added `NormalizeWinding()` → `CleanupVertices()` → `IsValid()` sequence in `Import()`. Invalid geometries are skipped with warning messages.
+- **Debug counters**: Added `InvalidRemovedCount`, `DuplicatesCleanedCount`, `WindingNormalizedCount` static counters to DxfService.
+- **Undo NestResult preservation**: `TakeSnapshot()` now saves `NestResult` (was null). `RestoreSnapshot()` restores it and calls `RemapNestResultPartReferences()`.
+- **TECHNICAL_AUDIT.md**: Marked 3 Medium findings as fixed, added detail sections.
 
-**Sorun:**
-netDxf.Standard 2.1.1 ile `DxfDocument.Entities` API'si bulunamıyor. 3.0 sürümü de NuGet'te yok.
+### Fixed Issues
+1. **Medium**: Polygon winding not normalized on DXF import — ✅ Fixed
+2. **Medium**: MirrorX/MirrorY flips polygon winding — ✅ Fixed
+3. **Medium**: Undo snapshot always discards NestResult — ✅ Fixed
 
-**Çözüm:**
-- DXF import: Geçici olarak devre dışı, uyarı mesajı veriyor
-- DXF export: Manuel DXF formatında yazılıyor (LWPOLYLINE section)
-- netDxf.Standard paket referansı yorum satırına alındı
-
-**Derleme komutu:**
-```bash
-cd NestLaserDesktop
-dotnet build
-```
-
-**Not:**
-DXF import/export özellikleri gelecek sürümde IxMilia.Dxf veya benzeri kütüphane ile tekrar eklenecek.
+### Build
+- `dotnet build` → ✅ 0 warning, 0 error
 
 ---
 
-## 2026-06-12 16:30 — Faz 3A: Gerçek DXF Import
-**Yapılan işlem:** Manuel DXF parser yazıldı, gerçek import aktif edildi
+## 2026-06-13 — FAZ 8F: Technical Audit & Expected Behavior Validation
 
-**Değişen dosyalar:**
-- `Services/DxfParser.cs` — Yeni! Manuel DXF formatı parser'ı
-- `Services/DxfService.cs` — DxfParser kullanacak şekilde güncellendi
-- `ViewModels/MainViewModel.cs` — Popup uyarılar kaldırıldı, durum çubuğuna yazıldı
+### Completed
+- Audited 11 systems across the codebase
+- **Critical fix**: NestPlacement.Part deserialization duplication — added `RemapNestResultPartReferences()`
+- **High fix**: DeleteSelectedLayer orphans Operation.LayerId — remap to fallback layer
+- **High fix**: Export report path crash — null-check + CreateDirectory + try-catch
+- Created `docs/TECHNICAL_AUDIT.md`
 
-**Desteilenen DXF Entity'leri:**
-- LWPOLYLINE (kapalı/açık)
-- POLYLINE (kapalı/açık)
-- CIRCLE (36 segment poligon)
-- ARC (yay noktaları)
-- LINE (2 noktalı çizgi)
+### Build
+- `dotnet build` → ✅ 0 warning, 0 error
 
-**Başarı Kriterleri:**
-- [x] DXF Aç butonu çalışıyor
-- [x] Parça sayısı görünür
-- [x] Listedeparçalar görünür
-- [x] Canvas'ta parça kontürleri görünür
-- [x] Toplam alan hesaplanıyor
-- [x] Popup kaldırıldı, durum çubuğu mesajları
+---
 
-**Derleme komutu:**
-```bash
-cd NestLaserDesktop
-dotnet build
-```
+## 2026-06-13 — FAZ 8E: Operation Manager & Laser Process Pipeline
+
+### Completed
+- OperationType enum (Engrave, Mark, CutInner, CutOuter, Reference)
+- LaserOperation model with INotifyPropertyChanged
+- Operations tab in MainWindow.xaml with drag-drop list, CRUD, properties
+- AutoSuggestOperations from layers with inner/outer detection
+- AnalyzeInnerOuterCut using polygon containment (GeometryUtils.PolygonContainsPolygon)
+- Operation Preview mode with type-based coloring
+- Drag-drop operation reordering in MainWindow.xaml.cs
+- Undo/redo integration (Operations cloned in snapshots)
+- DXF export report with operation order
+- Project system integration (.nelp serialization)
+
+### Build
+- `dotnet build` → ✅ 0 warning, 0 error
