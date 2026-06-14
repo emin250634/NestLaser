@@ -1,6 +1,12 @@
 bin/
 obj/
+publish/
+dist/
+.vs/
+TestResults/
 *.user
 *.suo
-.vs/
+*.pdb
+*.exe
+*.dll
 *.cache
