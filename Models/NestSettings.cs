@@ -10,6 +10,8 @@ public class NestSettings
     public bool OptimizeByArea { get; set; } = true;
     public int MaxIterations { get; set; } = 1000;
     public NestAlgorithm Algorithm { get; set; } = NestAlgorithm.FreeRectangle;
+
+    public bool EnableExperimentalAlgorithms { get; set; } = false;
 }
 
 public enum NestAlgorithm

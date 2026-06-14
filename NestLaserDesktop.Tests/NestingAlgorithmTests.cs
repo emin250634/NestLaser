@@ -18,6 +18,7 @@ public class NestingAlgorithmTests
         var settings = new NestSettings
         {
             Algorithm = NestAlgorithm.ShapeAwarePolygon,
+            EnableExperimentalAlgorithms = true,
             GapBetweenParts = 2,
             PlateMargin = 5
         };
@@ -45,6 +46,7 @@ public class NestingAlgorithmTests
         var settings = new NestSettings
         {
             Algorithm = NestAlgorithm.ShapeAwarePolygon,
+            EnableExperimentalAlgorithms = true,
             GapBetweenParts = 2,
             PlateMargin = 5
         };
@@ -71,6 +73,7 @@ public class NestingAlgorithmTests
         var settings = new NestSettings
         {
             Algorithm = NestAlgorithm.ShapeAwarePolygon,
+            EnableExperimentalAlgorithms = true,
             GapBetweenParts = 2,
             PlateMargin = 5
         };
@@ -95,6 +98,7 @@ public class NestingAlgorithmTests
         var settings = new NestSettings
         {
             Algorithm = NestAlgorithm.ShapeAwarePolygon,
+            EnableExperimentalAlgorithms = true,
             GapBetweenParts = 0,
             PlateMargin = 0
         };
@@ -119,7 +123,8 @@ public class NestingAlgorithmTests
     {
         var settings = new NestSettings
         {
-            Algorithm = NestAlgorithm.ShapeAwarePolygon
+            Algorithm = NestAlgorithm.ShapeAwarePolygon,
+            EnableExperimentalAlgorithms = true
         };
 
         var plate = new PlateModel { Width = 100, Height = 100 };

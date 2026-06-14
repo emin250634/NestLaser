@@ -4,6 +4,7 @@ publish/
 dist/
 .vs/
 TestResults/
+logs/
 *.user
 *.suo
 *.pdb

@@ -14,16 +14,28 @@ namespace NestLaserDesktop.Tests;
 
 public class TrueShapeNestingTests
 {
+    private NestSettings CreateExperimentalSettings()
+    {
+        return new NestSettings
+        {
+            Algorithm = NestAlgorithm.TrueShapeNesting,
+            EnableExperimentalAlgorithms = true
+        };
+    }
+
+    private NestSettings CreateExperimentalSettings(NestSettings settings)
+    {
+        settings.EnableExperimentalAlgorithms = true;
+        return settings;
+    }
+
     [Fact]
     [Trait("Category", "TrueShapeNestingTests")]
     public void TrueShapeNesting_PlacesHexagons_WithoutCollision()
     {
-        var settings = new NestSettings
-        {
-            Algorithm = NestAlgorithm.TrueShapeNesting,
-            GapBetweenParts = 2,
-            PlateMargin = 5
-        };
+        var settings = CreateExperimentalSettings();
+        settings.GapBetweenParts = 2;
+        settings.PlateMargin = 5;
 
         var plate = new PlateModel { Width = 300, Height = 200, Margin = 0 };
         var parts = new List<PartModel>
@@ -51,6 +63,7 @@ public class TrueShapeNestingTests
         var settings = new NestSettings
         {
             Algorithm = NestAlgorithm.TrueShapeNesting,
+            EnableExperimentalAlgorithms = true,
             GapBetweenParts = 0,
             PlateMargin = 0
         };
@@ -105,6 +118,7 @@ public class TrueShapeNestingTests
         var settings = new NestSettings
         {
             Algorithm = NestAlgorithm.TrueShapeNesting,
+            EnableExperimentalAlgorithms = true,
             GapBetweenParts = 2,
             PlateMargin = 5
         };
@@ -148,6 +162,7 @@ public class TrueShapeNestingTests
         var settings = new NestSettings
         {
             Algorithm = NestAlgorithm.TrueShapeNesting,
+            EnableExperimentalAlgorithms = true,
             GapBetweenParts = 0,
             PlateMargin = 0
         };
@@ -173,6 +188,7 @@ public class TrueShapeNestingTests
         var settings = new NestSettings
         {
             Algorithm = NestAlgorithm.TrueShapeNesting,
+            EnableExperimentalAlgorithms = true,
             GapBetweenParts = 2,
             PlateMargin = 5
         };
@@ -207,6 +223,7 @@ public class TrueShapeNestingTests
         var settings = new NestSettings
         {
             Algorithm = NestAlgorithm.TrueShapeNesting,
+            EnableExperimentalAlgorithms = true,
             GapBetweenParts = 2,
             PlateMargin = 5
         };
@@ -231,6 +248,7 @@ public class TrueShapeNestingTests
         var settings = new NestSettings
         {
             Algorithm = NestAlgorithm.TrueShapeNesting,
+            EnableExperimentalAlgorithms = true,
             GapBetweenParts = 2,
             PlateMargin = 5
         };
@@ -255,6 +273,7 @@ public class TrueShapeNestingTests
         var settings = new NestSettings
         {
             Algorithm = NestAlgorithm.TrueShapeNesting,
+            EnableExperimentalAlgorithms = true,
             GapBetweenParts = 0,
             PlateMargin = 0
         };
@@ -287,6 +306,7 @@ public class TrueShapeNestingTests
         var settings = new NestSettings
         {
             Algorithm = NestAlgorithm.TrueShapeNesting,
+            EnableExperimentalAlgorithms = true,
             GapBetweenParts = 0,
             PlateMargin = 0
         };
@@ -343,6 +363,7 @@ public class TrueShapeNestingTests
         var settings = new NestSettings
         {
             Algorithm = NestAlgorithm.TrueShapeNesting,
+            EnableExperimentalAlgorithms = true,
             GapBetweenParts = 0,
             PlateMargin = 0
         };
@@ -440,6 +461,7 @@ public class TrueShapeNestingTests
         var settings = new NestSettings
         {
             Algorithm = NestAlgorithm.TrueShapeNesting,
+            EnableExperimentalAlgorithms = true,
             GapBetweenParts = 0,
             PlateMargin = 0,
             AllowRotation0 = false,
@@ -536,6 +558,7 @@ public class TrueShapeNestingTests
         var settings = new NestSettings
         {
             Algorithm = NestAlgorithm.TrueShapeNesting,
+            EnableExperimentalAlgorithms = true,
             GapBetweenParts = 0,
             PlateMargin = 5
         };
@@ -626,6 +649,7 @@ public class TrueShapeNestingTests
         var settings = new NestSettings
         {
             Algorithm = NestAlgorithm.TrueShapeNesting,
+            EnableExperimentalAlgorithms = true,
             GapBetweenParts = 0,
             PlateMargin = 5,
             AllowRotation0 = true,
@@ -686,6 +710,7 @@ public class TrueShapeNestingTests
         var settings = new NestSettings
         {
             Algorithm = NestAlgorithm.TrueShapeNesting,
+            EnableExperimentalAlgorithms = true,
             GapBetweenParts = 0,
             PlateMargin = 5,
             AllowRotation0 = true,
@@ -775,6 +800,7 @@ public class TrueShapeNestingTests
         var settings = new NestSettings
         {
             Algorithm = NestAlgorithm.TrueShapeNesting,
+            EnableExperimentalAlgorithms = true,
             GapBetweenParts = 2,
             PlateMargin = 5,
             AllowRotation0 = true,
